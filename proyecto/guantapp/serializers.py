@@ -1,5 +1,8 @@
 from rest_framework import serializers
+from rest_framework import exceptions
+from django.contrib.auth import authenticate, login
 from guantapp.models import User, UserProfile, Marca
+#from guantapp.models import User, UserProfile, Marca, Producto
 
 class UserProfileSerializer(serializers.ModelSerializer):                
     class Meta:
@@ -9,16 +12,23 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.HyperlinkedModelSerializer):        
     profile = UserProfileSerializer(required=True)
     
+    password = serializers.CharField(
+        max_length=128,
+        #min_length=8,
+        min_length=4,
+        write_only=True
+    )
+    
     class Meta:
-        model = User
+        model = User        
         fields = ('username', 'email', 'first_name', 'last_name', 'password', 'profile')
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
         password = validated_data.pop('password')
-        user = User(**validated_data)
-        user.set_password(password)
+        user = User(**validated_data)        
+        user.set_password(password)        
         user.save()
         UserProfile.objects.create(user=user, **profile_data)
         return user
@@ -27,12 +37,6 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         profile_data = validated_data.pop('profile')
         profile = instance.profile
         instance.email = validated_data.get('email', instance.email)
-    #
-        instance.first_name=validated_data.get('first_name',instance.first_name)
-        instance.last_name=validated_data.get('last_name',instance.last_name)
-        instance.username=validated_data.get('username',instance.username)        
-
-    #
         instance.save()
 
         profile.profile_picture = profile_data.get('profile_picture', profile.profile_picture)        
@@ -47,9 +51,17 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
 
 class MarcaSerializer(serializers.ModelSerializer):
     
-    #user_profile=serializers.ReadOnlyField(source='user.id')
     user_profile=serializers.ReadOnlyField(source='user_profile.id')
+    #user_profile=serializers.ReadOnlyField(source='user.id')
 
     class Meta:
         model = Marca
         fields = ['nombre', 'slogan', 'descripcion','user_profile']
+
+
+"""class ProductoSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model=Producto
+        fields=['marca','nombre','precio','descripcion']"""
+

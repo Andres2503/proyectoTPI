@@ -7,13 +7,13 @@ class User(AbstractUser):
     username = models.CharField(null=False, unique=True,max_length=50)
     email = models.EmailField(_('email address'), unique=True, null=False)
     first_name=models.CharField(null=False, max_length=50)
-    last_name=models.CharField(null=False, max_length=50)        
+    last_name=models.CharField(null=False, max_length=50)    
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']    
 
     def __str__(self):
-        return "{}".format(self.email)
+        return "{}".format(self.email) 
 
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
@@ -22,7 +22,7 @@ class UserProfile(models.Model):
     country = models.CharField(max_length=50)
     city = models.CharField(max_length=50)
     nit = models.CharField(max_length=14)
-    nrc = models.CharField(max_length=50)
+    nrc = models.CharField(max_length=50)       
 
 class Marca(models.Model):
     user_profile=models.ForeignKey(UserProfile,null=False, on_delete=models.CASCADE, related_name='marca')
@@ -35,3 +35,10 @@ class Marca(models.Model):
 
     def __str__(self):
         return "{}".format(self.nombre)
+
+
+"""class Producto(models.Model):
+    marca=models.ForeignKey(Marca, null=False, on_delete=models.CASCADE, related_name='marca')
+    nombre=models.CharField(max_length=50, null=False)
+    precio=models.CharField(max_length=50, null=False)
+    descripcion=models.TextField(null=False, default='descripción del producto')"""

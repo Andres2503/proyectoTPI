@@ -6,10 +6,15 @@ from guantapp import views
 
 
 urlpatterns = [    
-    path('userlist', views.UserList.as_view()),
-    path('usercreate', views.UserCreate.as_view()),
-    path('userdetail/<int:pk>', views.UserDetail.as_view()),
-    path('marcacreate', views.MarcaCreate.as_view()),
-    path('marcalist', views.MarcaList.as_view()),
-    path('marcadetail/<int:pk>', views.MarcaDetail.as_view()),
+    path('userlist', views.UserLista.as_view()),
+    path('usercreate', views.UserCrear.as_view()),
+    path('userdetail/<int:pk>', views.UserDetalle.as_view()),    
+    path('marcacreate', views.MarcaCrear.as_view()),
+    path('marcalist', views.MarcaLista.as_view()),
+    path('marcadetail/<int:pk>', views.MarcaDetalle.as_view()),
+    path('marcasusuario',views.MarcaListaPorUsuario.as_view()),
+    path('userdetalle', views.DetalleUsuario.as_view()), 
+    #path('productocreate',views.ProductoCrear.as_view()),
+       
+
 ]
