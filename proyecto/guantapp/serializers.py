@@ -8,7 +8,7 @@ from guantapp.models import User, UserProfile, Marca, Producto, ListaDeseos, Cat
 class UserProfileSerializer(serializers.ModelSerializer):                
     class Meta:
         model = UserProfile
-        fields = ('profile_picture', 'phone','country', 'city', 'nit','nrc')
+        fields = ('profile_picture', 'phone','country', 'city', 'nit','nrc','user_id')
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):        
     profile = UserProfileSerializer(required=True)
@@ -58,6 +58,9 @@ class MarcaSerializer(serializers.ModelSerializer):
         model = Marca
         fields = ['nombre', 'slogan', 'descripcion','user_profile']
 
+class MarcaReadSerializer(MarcaSerializer):
+    user_profile=UserProfileSerializer(read_only=True)
+
 ##### Serializers relacionados a categoria
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -87,12 +90,10 @@ class ProductoSerializer(serializers.ModelSerializer):
         fields=['marca','nombre','precio','descripcion','categoria']
 
 class ProductoReadSerializer(ProductoSerializer):
-    marca=MarcaSerializer(read_only=True)
+    #marca=MarcaSerializer(read_only=True)
     #categoria=CategoriaSerializer(read_only=True)
+    marca=MarcaReadSerializer(read_only=True)
     categoria=CategoriaReadSerializer(read_only=True)
-
-class ProductoCategoriaReadSerializer(serializers.ModelSerializer):
-    marca=MarcaSerializer(read_only=True)    
 
 ####### Serializers relacionados a ListaDeseo
 class ListaDeseosSerializer(serializers.ModelSerializer):         
@@ -104,9 +105,10 @@ class ListaDeseosSerializer(serializers.ModelSerializer):
     
 class ListaDeseosReadSerializer(ListaDeseosSerializer):
     #user_profile=UserProfileSerializer(read_only=True)
+    #producto=ProductoReadSerializer(read_only=True)
     producto=ProductoSerializer(read_only=True)
 
-##### Serializers relacionados a Calificacion
+####### Serializers relacionados a Calificacion
 class CalificacionSerializer(serializers.ModelSerializer):
     user_profile=serializers.ReadOnlyField(source='user_profile.id')    
     class Meta:
@@ -115,20 +117,7 @@ class CalificacionSerializer(serializers.ModelSerializer):
 
 class CalificacionReadSerializer(CalificacionSerializer):
     producto=ProductoSerializer(read_only=True)
-
-##### Serializers relacionados a Pago
-class PagoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=Pago
-        fields=['__all__']
-
-
-##### Serializers relacionados a LineaOrden
-class LineaOrdenSerializer(serializers.ModelSerializer):
-    
-    class Meta:
-        model=LineaOrden
-        fields=['__all__']
+    user_profile=UserProfileSerializer(read_only=True)
 
 
 ##### Serializers relacionados a Orden
@@ -136,15 +125,36 @@ class OrdenSerializer(serializers.ModelSerializer):
     comprador=serializers.ReadOnlyField(source='user_profile.id')
     class Meta:
         model=Orden
-        fields=['comprador','pago','vendedor']
+        fields=['comprador','estado','vendedor']
+
+class OrdenReadSerializer(OrdenSerializer):
+    comprador=UserProfileSerializer(read_only=True)
+    vendedor=UserProfileSerializer(read_only=True)    
+    class Meta:
+        model=Orden
+        fields=['comprador','estado','vendedor','fecha','hora','num_orden']
+
 
 ##### Serializers relacionados a LineaOrden
-
 class LineaOrdenSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model=LineaOrden
-        fields=['__all__']
-    
+        fields=['cantidad','precio_unitario','orden','producto']
+
 class LineaOrdenReadSerializer(LineaOrdenSerializer):
-    producto=ProductoSerializer(read_only=True)
-    orden=OrdenSerializer(read_only=True)
+    producto=ProductoReadSerializer(read_only=True)
+    orden=OrdenReadSerializer(read_only=True)    
+    class Meta:        
+        model=LineaOrden
+        fields=['cantidad','precio_unitario','orden','producto']
+
+
+##### Serializers relacionados a Pago
+class PagoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Pago
+        fields=['monto','metodo_pago','orden']
+
+class PagoReadSerializer(PagoSerializer):
+    orden=OrdenReadSerializer(read_only=True)

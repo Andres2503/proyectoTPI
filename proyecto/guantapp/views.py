@@ -4,7 +4,7 @@ from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework import mixins
 from guantapp.models import User, UserProfile, Marca, Producto, ListaDeseos, Categoria, Calificacion, Orden, Pago, LineaOrden
-from guantapp.serializers import UserSerializer, MarcaSerializer, ProductoSerializer, ProductoReadSerializer,ListaDeseosSerializer, ListaDeseosReadSerializer, PagoSerializer, LineaOrdenSerializer, OrdenSerializer, CalificacionSerializer, CalificacionReadSerializer, LineaOrdenReadSerializer, CategoriaSerializer, CategoriaReadSerializer
+from guantapp.serializers import UserSerializer, MarcaSerializer, MarcaReadSerializer, ProductoSerializer, ProductoReadSerializer,ListaDeseosSerializer, ListaDeseosReadSerializer, PagoSerializer, LineaOrdenSerializer, OrdenSerializer, CalificacionSerializer, CalificacionReadSerializer, LineaOrdenReadSerializer, CategoriaSerializer, CategoriaReadSerializer, PagoReadSerializer, OrdenReadSerializer
 from guantapp.permissions import IsOwnerUser, IsOwnerOrReadOnlyMarca, IsOwnerOrReadOnlyProducto
 from rest_framework import permissions
 from django.http import Http404
@@ -56,13 +56,14 @@ class DetalleUsuario(APIView):
 #Se listan todas las marcas registradas
 class MarcaLista(generics.ListAPIView):
     queryset = Marca.objects.all()
-    serializer_class = MarcaSerializer    
+    serializer_class = MarcaReadSerializer    
     permission_classes = [permissions.IsAuthenticated]
 
 
 
 #Se listan todas las marcas registradas
 #Otra manera, realmente solo se necesita el GET
+#########################         MarcaReadSerializer
 """class MarcaLista(APIView):
             
     permission_classes = [permissions.IsAuthenticated]
@@ -92,7 +93,7 @@ class MarcaCrear(generics.CreateAPIView):
 #View para detalle de marca    
 class MarcaDetalle(generics.RetrieveUpdateDestroyAPIView):
     queryset = Marca.objects.all()
-    serializer_class = MarcaSerializer
+    serializer_class = MarcaReadSerializer
         
     permission_classes = [IsOwnerOrReadOnlyMarca]
 
@@ -101,7 +102,7 @@ class MarcaListaPorUsuario(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     def get(self, request, format=None):                        
         marcas = Marca.objects.all().filter(user_profile_id=self.request.user.id)
-        serializer = MarcaSerializer(marcas, many=True)
+        serializer = MarcaReadSerializer(marcas, many=True)
         return Response(serializer.data)
 
 
@@ -115,7 +116,7 @@ class ProductoCrear(generics.CreateAPIView):
 #Detalle de producto
 class ProductoDetalle(generics.RetrieveUpdateDestroyAPIView):    
     queryset = Producto.objects.all()
-    serializer_class = ProductoSerializer    
+    serializer_class = ProductoReadSerializer    
     permission_classes = [IsOwnerOrReadOnlyProducto]
 
 #Lista de todos los productos
@@ -152,6 +153,11 @@ class AgregarPago(generics.CreateAPIView):
     serializer_class=PagoSerializer
     permission_classes=[permissions.IsAuthenticated]
 
+class VerPago(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Pago.objects.all()
+    serializer_class = PagoReadSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
 ############# Orden ############
 class AgregarOrden(generics.CreateAPIView):
     serializer_class=OrdenSerializer
@@ -159,7 +165,12 @@ class AgregarOrden(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         user_profile=UserProfile.objects.get(user_id=self.request.user.id)        
-        serializer.save(comprador=user_profile.id)
+        serializer.save(comprador=user_profile)
+
+class VerOrden(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Orden.objects.all()
+    serializer_class = OrdenReadSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 
 ############# LineaOrden ############
@@ -182,6 +193,23 @@ class VerCategoria(generics.RetrieveUpdateDestroyAPIView):
     queryset = Categoria.objects.all()
     serializer_class = CategoriaReadSerializer
     permission_classes = [permissions.AllowAny]
+
+
+
+########## Calificacion ########
+class AgregarCalificacion(generics.CreateAPIView):
+    serializer_class = CalificacionSerializer    
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def perform_create(self, serializer):
+        user_profile=UserProfile.objects.get(user_id=self.request.user.id)        
+        serializer.save(user_profile=user_profile)
+
+class VerCalificacion(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Calificacion.objects.all()
+    serializer_class = CalificacionReadSerializer
+    permission_classes = [permissions.AllowAny]
+
 
 #########################################################
 class VerProductosPorCategoria(generics.ListAPIView):

@@ -61,7 +61,7 @@ class ListaDeseos(models.Model):
     user_profile=models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='user_profile_lista_deseos')
     producto=models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='productos')
 
-class Calificacion(models.Model):
+class Calificacion(models.Model):    
     valor_calificacion=models.CharField(max_length=1)#suponiendo valor 1 al 5
     producto=models.ForeignKey(Producto,null=False,on_delete=models.CASCADE)
     user_profile=models.ForeignKey(UserProfile,null=False,on_delete=models.CASCADE)
@@ -70,8 +70,8 @@ class Calificacion(models.Model):
 
 class Orden(models.Model):    
     num_orden=models.AutoField(primary_key=True)
-    fecha=models.DateField(auto_now=False,auto_now_add=False)
-    hora=models.TimeField(auto_now=False, auto_now_add=False)
+    fecha=models.DateField(auto_now=True)
+    hora=models.TimeField(auto_now=True)
     estado=models.IntegerField()#Pendiente, duda con los valores de borrador, pagado, etc
     vendedor=models.ForeignKey(UserProfile,null=False,on_delete=models.CASCADE,related_name='vendedor')
     comprador=models.ForeignKey(UserProfile,null=False,on_delete=models.CASCADE,related_name='comprador')
@@ -79,7 +79,7 @@ class Orden(models.Model):
 
 class Pago(models.Model):
     monto=models.DecimalField(max_digits=10,decimal_places=2,null=False)    
-    fecha=models.DateField(auto_now=False,auto_now_add=False)
+    fecha=models.DateField(auto_now=True)
     metodo_pago=models.IntegerField()#Duda
     orden=models.OneToOneField(Orden,null=False,on_delete=models.CASCADE)
 
