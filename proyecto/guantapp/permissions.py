@@ -21,3 +21,14 @@ class IsOwnerOrReadOnlyMarca(permissions.BasePermission):
 
         # Write permissions are only allowed to the owner 
         return obj.user_profile.user ==request.user        
+
+class IsOwnerOrReadOnlyProducto(permissions.BasePermission):    
+    def has_object_permission(self, request, view, obj):
+        # Read permissions are allowed to any request,
+        # so we'll always allow GET, HEAD or OPTIONS requests.
+        #Permitimos que otros usuarios puedan acceder a leer los datos de la marca de otro usuario
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
+        # Write permissions are only allowed to the owner 
+        return obj.marca.user_profile.user ==request.user        

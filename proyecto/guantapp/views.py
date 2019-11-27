@@ -3,16 +3,18 @@ from rest_framework import viewsets
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework import mixins
-from guantapp.models import User, Marca
-from guantapp.serializers import UserSerializer, MarcaSerializer
-#from guantapp.serializers import UserSerializer, MarcaSerializer, ProductoSerializer
-from guantapp.permissions import IsOwnerUser, IsOwnerOrReadOnlyMarca
+from guantapp.models import User, UserProfile, Marca, Producto, ListaDeseos, Categoria, Calificacion, Orden, Pago, LineaOrden
+from guantapp.serializers import UserSerializer, MarcaSerializer, ProductoSerializer, ProductoReadSerializer,ListaDeseosSerializer, ListaDeseosReadSerializer, PagoSerializer, LineaOrdenSerializer, OrdenSerializer, CalificacionSerializer, CalificacionReadSerializer, LineaOrdenReadSerializer, CategoriaSerializer, CategoriaReadSerializer
+from guantapp.permissions import IsOwnerUser, IsOwnerOrReadOnlyMarca, IsOwnerOrReadOnlyProducto
 from rest_framework import permissions
 from django.http import Http404
 from rest_framework.response import Response
 from rest_framework import status
 
-#Creo que no iría, o puede agregarse un permissions.IsAdmin
+
+################  USER Y USERPROFILE #################
+
+#Creo que no iría, o puede agregarse un permissions.IsAdminUser
 #Lista todos los usuarios registrados
 class UserLista(generics.ListAPIView):
     queryset = User.objects.all()
@@ -47,7 +49,10 @@ class DetalleUsuario(APIView):
         return Response(serializer.data)
 
 
-#Creo que no iría, o puede agregarse un permissions.IsAdmin
+################  MARCA #################
+
+
+#Creo que no iría, o puede agregarse un permissions.IsAdminUser
 #Se listan todas las marcas registradas
 class MarcaLista(generics.ListAPIView):
     queryset = Marca.objects.all()
@@ -61,8 +66,7 @@ class MarcaLista(generics.ListAPIView):
 """class MarcaLista(APIView):
             
     permission_classes = [permissions.IsAuthenticated]
-    def get(self, request, format=None):
-        permission_classes = [permissions.IsAuthenticated]
+    def get(self, request, format=None):        
         marcas = Marca.objects.all()
         serializer = MarcaSerializer(marcas, many=True)
         return Response(serializer.data)
@@ -73,7 +77,6 @@ class MarcaLista(generics.ListAPIView):
             serializer.save(user_profile_id=self.request.user.id)            
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)"""
-
 
 
 #View para crear marca
@@ -102,9 +105,96 @@ class MarcaListaPorUsuario(APIView):
         return Response(serializer.data)
 
 
+################  PRODUCTO #################
+
 #View para crear producto
-"""class ProductoCrear(generics.CreateAPIView):    
+class ProductoCrear(generics.CreateAPIView):    
     serializer_class = ProductoSerializer
-    permission_classes = [permissions.IsAuthenticated]"""
+    permission_classes = [permissions.IsAuthenticated]
+
+#Detalle de producto
+class ProductoDetalle(generics.RetrieveUpdateDestroyAPIView):    
+    queryset = Producto.objects.all()
+    serializer_class = ProductoSerializer    
+    permission_classes = [IsOwnerOrReadOnlyProducto]
+
+#Lista de todos los productos
+class ProductosLista(generics.ListAPIView):
+    queryset = Producto.objects.all()
+    serializer_class = ProductoReadSerializer
+    #permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
+            
+
+################  LISTA DE DESEO #################
+
+#View para agregar producto a la lista de deseo de usuario(solo necesita pk del producto, el id va en el token)
+class AgregarProductoLista(generics.CreateAPIView):
+    serializer_class=ListaDeseosSerializer
+    permission_classes=[permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        user_profile=UserProfile.objects.get(user_id=self.request.user.id)
+        serializer.save(user_profile_id=user_profile.id)
+
+#Para recuperar la lista de deseos del usuario
+class VerListaDeseos(APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    def get(self, request, format=None):                        
+        user_profile=UserProfile.objects.get(user_id=self.request.user.id)
+        productos = ListaDeseos.objects.all().filter(user_profile_id=user_profile.id)
+        serializer = ListaDeseosReadSerializer(productos, many=True)
+        return Response(serializer.data)
 
 
+############## PAGO ###########
+class AgregarPago(generics.CreateAPIView):
+    serializer_class=PagoSerializer
+    permission_classes=[permissions.IsAuthenticated]
+
+############# Orden ############
+class AgregarOrden(generics.CreateAPIView):
+    serializer_class=OrdenSerializer
+    permission_classes=[permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        user_profile=UserProfile.objects.get(user_id=self.request.user.id)        
+        serializer.save(comprador=user_profile.id)
+
+
+############# LineaOrden ############
+class AgregarLineaOrden(generics.CreateAPIView):
+    serializer_class = LineaOrdenSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class VerLineaOrden(generics.RetrieveUpdateDestroyAPIView):
+    queryset = LineaOrden.objects.all()
+    serializer_class = LineaOrdenReadSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+########## Categoria ########
+class AgregarCategoria(generics.CreateAPIView):
+    serializer_class = CategoriaSerializer
+    #permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
+
+class VerCategoria(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Categoria.objects.all()
+    serializer_class = CategoriaReadSerializer
+    permission_classes = [permissions.AllowAny]
+
+#########################################################
+class VerProductosPorCategoria(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    serializer_class = ProductoReadSerializer
+
+    def get_queryset(self):
+        """
+        Optionally restricts the returned purchases to a given user,
+        by filtering against a `username` query parameter in the URL.
+        """
+        queryset = Producto.objects.all()
+        categoria = self.request.query_params.get('categoria', None)
+        if categoria is not None:
+            queryset = Producto.objects.all().filter(categoria=categoria)
+        return queryset
