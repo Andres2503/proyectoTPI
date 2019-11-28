@@ -136,8 +136,7 @@ class OrdenReadSerializer(OrdenSerializer):
 
 
 ##### Serializers relacionados a LineaOrden
-class LineaOrdenSerializer(serializers.ModelSerializer):
-    
+class LineaOrdenSerializer(serializers.ModelSerializer):    
     class Meta:
         model=LineaOrden
         fields=['cantidad','precio_unitario','orden','producto']
@@ -145,9 +144,11 @@ class LineaOrdenSerializer(serializers.ModelSerializer):
 class LineaOrdenReadSerializer(LineaOrdenSerializer):
     producto=ProductoReadSerializer(read_only=True)
     orden=OrdenReadSerializer(read_only=True)    
+    subtotal=serializers.ReadOnlyField()    
+    
     class Meta:        
         model=LineaOrden
-        fields=['cantidad','precio_unitario','orden','producto']
+        fields=['cantidad','precio_unitario','subtotal','orden','producto']
 
 
 ##### Serializers relacionados a Pago

@@ -87,11 +87,11 @@ class Pago(models.Model):
 class LineaOrden(models.Model):
     cantidad=models.IntegerField()
     #subtotal=models.DecimalField(max_digits=10,decimal_places=2,null=False)
-    precio_unitario=models.DecimalField(max_digits=10,decimal_places=2,null=False)#duda con campo
+    precio_unitario=models.DecimalField(max_digits=10,decimal_places=2,null=False)
     orden=models.ForeignKey(Orden,null=False,on_delete=models.CASCADE)
     producto=models.ForeignKey(Producto,null=False,on_delete=models.CASCADE)
 
     @property
     def subtotal(self):
-        return '{subtotal}'.format(subtotal=precio_unitario*cantidad)
+        return '{subtotal}'.format(subtotal=self.precio_unitario*self.cantidad)    
 

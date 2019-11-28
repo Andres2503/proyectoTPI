@@ -12,7 +12,7 @@ urlpatterns = [
     path('marcacreate', views.MarcaCrear.as_view()),
     path('marcalist', views.MarcaLista.as_view()),
     path('marcadetail/<int:pk>', views.MarcaDetalle.as_view()),
-    path('marcasusuario',views.MarcaListaPorUsuario.as_view()),
+    path('marcasusuario',views.MarcaListaPorUsuarioLogueado.as_view()),
     path('userdetalle', views.DetalleUsuario.as_view()), 
     path('productocreate',views.ProductoCrear.as_view()),
     path('productoagregarlista',views.AgregarProductoLista.as_view()),
@@ -29,5 +29,9 @@ urlpatterns = [
     path('verpago/<int:pk>',views.VerPago.as_view()),
     path('calificacioncreate',views.AgregarCalificacion.as_view()),
     path('vercalificacion/<int:pk>',views.VerCalificacion.as_view()),
+
+    path('productoscategoria',views.VerProductosPorCategoria.as_view()),
+    path('productosmarca',views.VerProductosPorMarca.as_view()),
+    path('marcasuserprofile',views.VerMarcasPorUserProfile.as_view()),
 
 ]

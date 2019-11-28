@@ -59,27 +59,6 @@ class MarcaLista(generics.ListAPIView):
     serializer_class = MarcaReadSerializer    
     permission_classes = [permissions.IsAuthenticated]
 
-
-
-#Se listan todas las marcas registradas
-#Otra manera, realmente solo se necesita el GET
-#########################         MarcaReadSerializer
-"""class MarcaLista(APIView):
-            
-    permission_classes = [permissions.IsAuthenticated]
-    def get(self, request, format=None):        
-        marcas = Marca.objects.all()
-        serializer = MarcaSerializer(marcas, many=True)
-        return Response(serializer.data)
-
-    def post(self, request, format=None):
-        serializer = MarcaSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user_profile_id=self.request.user.id)            
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)"""
-
-
 #View para crear marca
 class MarcaCrear(generics.CreateAPIView):
     queryset = Marca.objects.all()
@@ -97,9 +76,24 @@ class MarcaDetalle(generics.RetrieveUpdateDestroyAPIView):
         
     permission_classes = [IsOwnerOrReadOnlyMarca]
 
-#View para listar las marcas del usuario del token
-class MarcaListaPorUsuario(APIView):            
+#View para ver marcas por perfil de usuario
+class VerMarcasPorUserProfile(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    #serializer_class = MarcaReadSerializer
+    serializer_class = MarcaSerializer
+
+    def get_queryset(self):        
+
+        queryset=[]    
+        user_profile_id = self.request.query_params.get('user_profile_id', None)
+        if user_profile_id is not None:
+            queryset=Marca.objects.all().filter(user_profile_id=user_profile_id)        
+        return queryset
+
+
+#View para listar las marcas del usuario del token
+class MarcaListaPorUsuarioLogueado(APIView):            
+    permission_classes = [permissions.IsAuthenticated]
     def get(self, request, format=None):                        
         marcas = Marca.objects.all().filter(user_profile_id=self.request.user.id)
         serializer = MarcaReadSerializer(marcas, many=True)
@@ -119,13 +113,60 @@ class ProductoDetalle(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProductoReadSerializer    
     permission_classes = [IsOwnerOrReadOnlyProducto]
 
-#Lista de todos los productos
+#View que lista todos los productos
 class ProductosLista(generics.ListAPIView):
     queryset = Producto.objects.all()
-    serializer_class = ProductoReadSerializer
-    #permission_classes = [permissions.IsAuthenticated]
+    #serializer_class = ProductoSerializer    
+    serializer_class = ProductoReadSerializer        
     permission_classes = [permissions.AllowAny]
-            
+
+## Recupera los productos de la categoría
+#Si la categoría tiene hijos también recupera sus productos
+class VerProductosPorCategoria(generics.ListAPIView):
+    permission_classes = [permissions.AllowAny]
+    #serializer_class = ProductoReadSerializer
+    serializer_class = ProductoSerializer
+
+    def get_queryset(self):        
+
+        queryset=[]    
+        categoria_id = self.request.query_params.get('categoria', None)        
+        if categoria_id is not None:
+            lista= busqueda_productos_por_categoria(categoria_id)
+            for elemento in lista:
+                queryset+=Producto.objects.all().filter(categoria_id=elemento)
+        else:
+            queryset+=Producto.objects.all()
+        return queryset
+
+
+def busqueda_productos_por_categoria(categoria_id):
+    lista=[]
+    if categoria_id is not None:        
+        lista.append(categoria_id)             
+        hijos=Categoria.objects.all().filter(parent_id=categoria_id)
+        hijos_num=hijos.count()
+        if hijos_num >0:
+            lista_categorias=[]
+            for categoria in hijos:
+                    lista_categorias+=busqueda_productos_por_categoria(categoria.id)
+                    for x in lista_categorias:                        
+                        lista.append(x)
+    return lista
+
+#View que lista todos los productos que pertenecen a una marca
+class VerProductosPorMarca(generics.ListAPIView):
+    permission_classes = [permissions.AllowAny]
+    #serializer_class = ProductoReadSerializer
+    serializer_class = ProductoSerializer
+
+    def get_queryset(self):        
+
+        queryset=[]    
+        marca_id = self.request.query_params.get('marca', None)
+        if marca_id is not None:
+            queryset=Producto.objects.all().filter(marca_id=marca_id)        
+        return queryset
 
 ################  LISTA DE DESEO #################
 
@@ -195,7 +236,6 @@ class VerCategoria(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.AllowAny]
 
 
-
 ########## Calificacion ########
 class AgregarCalificacion(generics.CreateAPIView):
     serializer_class = CalificacionSerializer    
@@ -212,17 +252,4 @@ class VerCalificacion(generics.RetrieveUpdateDestroyAPIView):
 
 
 #########################################################
-class VerProductosPorCategoria(generics.ListAPIView):
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    serializer_class = ProductoReadSerializer
 
-    def get_queryset(self):
-        """
-        Optionally restricts the returned purchases to a given user,
-        by filtering against a `username` query parameter in the URL.
-        """
-        queryset = Producto.objects.all()
-        categoria = self.request.query_params.get('categoria', None)
-        if categoria is not None:
-            queryset = Producto.objects.all().filter(categoria=categoria)
-        return queryset
