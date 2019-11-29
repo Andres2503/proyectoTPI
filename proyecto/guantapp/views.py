@@ -95,7 +95,8 @@ class VerMarcasPorUserProfile(generics.ListAPIView):
 class MarcaListaPorUsuarioLogueado(APIView):            
     permission_classes = [permissions.IsAuthenticated]
     def get(self, request, format=None):                        
-        marcas = Marca.objects.all().filter(user_profile_id=self.request.user.id)
+        user_profile=UserProfile.objects.get(user_id=self.request.user.id)
+        marcas = Marca.objects.all().filter(user_profile_id=user_profile.id)
         serializer = MarcaReadSerializer(marcas, many=True)
         return Response(serializer.data)
 
@@ -129,7 +130,7 @@ class VerProductosPorCategoria(generics.ListAPIView):
     def get_queryset(self):        
 
         queryset=[]    
-        categoria_id = self.request.query_params.get('categoria', None)        
+        categoria_id = self.request.query_params.get('categoria_id', None)
         if categoria_id is not None:
                 lista_categorias=Categoria.objects.get(id=categoria_id).get_descendants(include_self=True)
                 for categoria in lista_categorias:
@@ -148,7 +149,7 @@ class VerProductosPorMarca(generics.ListAPIView):
     def get_queryset(self):        
 
         queryset=[]    
-        marca_id = self.request.query_params.get('marca', None)
+        marca_id = self.request.query_params.get('marca_id', None)
         if marca_id is not None:
             queryset=Producto.objects.all().filter(marca_id=marca_id)        
         return queryset
@@ -231,7 +232,7 @@ class VerHijosDeCategoria(generics.ListAPIView):
 
     def get_queryset(self):
         queryset=[]    
-        categoria_id = self.request.query_params.get('categoria', None)        
+        categoria_id = self.request.query_params.get('categoria_id', None)        
         if categoria_id is not None:            
                 #queryset=Categoria.objects.get(id=categoria_id).get_descendants(include_self=True)#Incluye al padre
                 queryset=Categoria.objects.get(id=categoria_id).get_descendants(include_self=False)#no incluye al padre
@@ -260,7 +261,7 @@ class VerCalificacionesProducto(generics.ListAPIView):
 
     def get_queryset(self):
         queryset=[]    
-        producto_id = self.request.query_params.get('producto', None)        
+        producto_id = self.request.query_params.get('producto_id', None)        
         if producto_id is not None:                            
                 queryset=Calificacion.objects.all().filter(producto_id=producto_id)
         return queryset
