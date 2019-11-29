@@ -4,8 +4,8 @@ from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework import mixins
 from guantapp.models import User, UserProfile, Marca, Producto, ListaDeseos, Categoria, Calificacion, Orden, Pago, LineaOrden
-from guantapp.serializers import UserSerializer, MarcaSerializer, MarcaReadSerializer, ProductoSerializer, ProductoReadSerializer,ListaDeseosSerializer, ListaDeseosReadSerializer, PagoSerializer, LineaOrdenSerializer, OrdenSerializer, CalificacionSerializer, CalificacionReadSerializer, LineaOrdenReadSerializer, CategoriaSerializer, CategoriaReadSerializer, PagoReadSerializer, OrdenReadSerializer
-from guantapp.permissions import IsOwnerUser, IsOwnerOrReadOnlyMarca, IsOwnerOrReadOnlyProducto
+from guantapp.serializers import UserSerializer, MarcaSerializer, MarcaReadSerializer, ProductoSerializer, ProductoReadSerializer,ListaDeseosSerializer, ListaDeseosReadSerializer, PagoSerializer, LineaOrdenSerializer, OrdenSerializer, CalificacionSerializer, CalificacionReadSerializer, LineaOrdenReadSerializer, CategoriaSerializer, CategoriaReadSerializer, PagoReadSerializer, OrdenReadSerializer, CalificacionesProductoSerializer
+from guantapp.permissions import IsOwnerUser, IsOwnerOrReadOnlyMarca, IsOwnerOrReadOnlyProducto, IsOwnerPagoAndLineaOrden, IsOwnerOrden
 from rest_framework import permissions
 from django.http import Http404
 from rest_framework.response import Response
@@ -59,15 +59,15 @@ class MarcaLista(generics.ListAPIView):
     serializer_class = MarcaReadSerializer    
     permission_classes = [permissions.IsAuthenticated]
 
-#View para crear marca
+
 class MarcaCrear(generics.CreateAPIView):
     queryset = Marca.objects.all()
     serializer_class = MarcaSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
-        serializer.save(user_profile_id=self.request.user.id)
-        #serializer.save(user_id=self.request.user.id)
+    def perform_create(self, serializer):        
+        user_profile=UserProfile.objects.get(user_id=self.request.user.id)
+        serializer.save(user_profile_id=user_profile.id)
 
 #View para detalle de marca    
 class MarcaDetalle(generics.RetrieveUpdateDestroyAPIView):
@@ -91,7 +91,7 @@ class VerMarcasPorUserProfile(generics.ListAPIView):
         return queryset
 
 
-#View para listar las marcas del usuario del token
+#View para listar las marcas del usuario logueado por el token
 class MarcaListaPorUsuarioLogueado(APIView):            
     permission_classes = [permissions.IsAuthenticated]
     def get(self, request, format=None):                        
@@ -100,14 +100,12 @@ class MarcaListaPorUsuarioLogueado(APIView):
         return Response(serializer.data)
 
 
-################  PRODUCTO #################
+###################  PRODUCTO #################
 
-#View para crear producto
 class ProductoCrear(generics.CreateAPIView):    
     serializer_class = ProductoSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-#Detalle de producto
 class ProductoDetalle(generics.RetrieveUpdateDestroyAPIView):    
     queryset = Producto.objects.all()
     serializer_class = ProductoReadSerializer    
@@ -119,6 +117,7 @@ class ProductosLista(generics.ListAPIView):
     #serializer_class = ProductoSerializer    
     serializer_class = ProductoReadSerializer        
     permission_classes = [permissions.AllowAny]
+
 
 ## Recupera los productos de la categoría
 #Si la categoría tiene hijos también recupera sus productos
@@ -132,27 +131,13 @@ class VerProductosPorCategoria(generics.ListAPIView):
         queryset=[]    
         categoria_id = self.request.query_params.get('categoria', None)        
         if categoria_id is not None:
-            lista= busqueda_productos_por_categoria(categoria_id)
-            for elemento in lista:
-                queryset+=Producto.objects.all().filter(categoria_id=elemento)
+                lista_categorias=Categoria.objects.get(id=categoria_id).get_descendants(include_self=True)
+                for categoria in lista_categorias:
+                    queryset+=Producto.objects.all().filter(categoria_id=categoria.id)
         else:
-            queryset+=Producto.objects.all()
+            queryset=Producto.objects.all()
         return queryset
 
-
-def busqueda_productos_por_categoria(categoria_id):
-    lista=[]
-    if categoria_id is not None:        
-        lista.append(categoria_id)             
-        hijos=Categoria.objects.all().filter(parent_id=categoria_id)
-        hijos_num=hijos.count()
-        if hijos_num >0:
-            lista_categorias=[]
-            for categoria in hijos:
-                    lista_categorias+=busqueda_productos_por_categoria(categoria.id)
-                    for x in lista_categorias:                        
-                        lista.append(x)
-    return lista
 
 #View que lista todos los productos que pertenecen a una marca
 class VerProductosPorMarca(generics.ListAPIView):
@@ -167,6 +152,7 @@ class VerProductosPorMarca(generics.ListAPIView):
         if marca_id is not None:
             queryset=Producto.objects.all().filter(marca_id=marca_id)        
         return queryset
+
 
 ################  LISTA DE DESEO #################
 
@@ -197,9 +183,10 @@ class AgregarPago(generics.CreateAPIView):
 class VerPago(generics.RetrieveUpdateDestroyAPIView):
     queryset = Pago.objects.all()
     serializer_class = PagoReadSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsOwnerPagoAndLineaOrden]
 
-############# Orden ############
+
+############# ORDEN ############
 class AgregarOrden(generics.CreateAPIView):
     serializer_class=OrdenSerializer
     permission_classes=[permissions.IsAuthenticated]
@@ -211,10 +198,10 @@ class AgregarOrden(generics.CreateAPIView):
 class VerOrden(generics.RetrieveUpdateDestroyAPIView):
     queryset = Orden.objects.all()
     serializer_class = OrdenReadSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsOwnerOrden]
 
 
-############# LineaOrden ############
+############# LINEA ORDEN ############
 class AgregarLineaOrden(generics.CreateAPIView):
     serializer_class = LineaOrdenSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -222,9 +209,10 @@ class AgregarLineaOrden(generics.CreateAPIView):
 class VerLineaOrden(generics.RetrieveUpdateDestroyAPIView):
     queryset = LineaOrden.objects.all()
     serializer_class = LineaOrdenReadSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsOwnerPagoAndLineaOrden]
 
-########## Categoria ########
+
+########## CATEGORIA ########
 class AgregarCategoria(generics.CreateAPIView):
     serializer_class = CategoriaSerializer
     #permission_classes = [permissions.IsAdminUser]
@@ -236,14 +224,28 @@ class VerCategoria(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.AllowAny]
 
 
-########## Calificacion ########
+class VerHijosDeCategoria(generics.ListAPIView):
+    permission_classes = [permissions.AllowAny]
+    #serializer_class = CategoriaReadSerializer
+    serializer_class = CategoriaSerializer
+
+    def get_queryset(self):
+        queryset=[]    
+        categoria_id = self.request.query_params.get('categoria', None)        
+        if categoria_id is not None:            
+                #queryset=Categoria.objects.get(id=categoria_id).get_descendants(include_self=True)#Incluye al padre
+                queryset=Categoria.objects.get(id=categoria_id).get_descendants(include_self=False)#no incluye al padre
+        return queryset
+
+########## CALIFICACION ########
 class AgregarCalificacion(generics.CreateAPIView):
     serializer_class = CalificacionSerializer    
     permission_classes = [permissions.IsAuthenticated]
     
     def perform_create(self, serializer):
-        user_profile=UserProfile.objects.get(user_id=self.request.user.id)        
+        user_profile=UserProfile.objects.get(user_id=self.request.user.id)
         serializer.save(user_profile=user_profile)
+
 
 class VerCalificacion(generics.RetrieveUpdateDestroyAPIView):
     queryset = Calificacion.objects.all()
@@ -251,5 +253,14 @@ class VerCalificacion(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.AllowAny]
 
 
-#########################################################
+class VerCalificacionesProducto(generics.ListAPIView):
+    queryset = Calificacion.objects.all()
+    serializer_class = CalificacionesProductoSerializer
+    permission_classes = [permissions.AllowAny]
 
+    def get_queryset(self):
+        queryset=[]    
+        producto_id = self.request.query_params.get('producto', None)        
+        if producto_id is not None:                            
+                queryset=Calificacion.objects.all().filter(producto_id=producto_id)
+        return queryset
