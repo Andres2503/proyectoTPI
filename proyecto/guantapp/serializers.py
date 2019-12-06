@@ -56,7 +56,7 @@ class MarcaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Marca
-        fields = ['nombre', 'slogan', 'descripcion','user_profile']
+        fields = ['nombre', 'slogan', 'descripcion','marca_picture','user_profile']
 
 class MarcaReadSerializer(MarcaSerializer):
     user_profile=UserProfileSerializer(read_only=True)
@@ -77,7 +77,7 @@ class ProductoSerializer(serializers.ModelSerializer):
     #marca=MarcaSerializer(many=True)
     class Meta:
         model=Producto
-        fields=['marca','nombre','precio','descripcion','categoria']
+        fields=['marca','nombre','precio','descripcion','producto_picture','categoria']
 
 
 class ProductoReadSerializer(ProductoSerializer):

@@ -33,6 +33,7 @@ class Marca(models.Model):
     nombre=models.CharField(max_length=50, null=False, validators=[RegexValidator(regex=r"[A-Za-z0-9\s]{4,50}",message="Nombre de marca inválido")])
     slogan=models.CharField(max_length=50, null=False, validators=[RegexValidator(regex=r"[A-Za-z0-9\s]{4,50}",message="Eslogan inválido")])
     descripcion=models.TextField(max_length=200, null=False, default='descripción marca')
+    marca_picture=models.ImageField()
 
     class Meta:
         ordering = ['nombre']
@@ -55,6 +56,7 @@ class Producto(models.Model):
     precio=models.DecimalField(max_digits=10,decimal_places=2, null=False)
     descripcion=models.TextField(null=False, default='descripción del producto')
     categoria=models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name='categoria')
+    producto_picture=models.ImageField()
 
 class ListaDeseos(models.Model):
     user_profile=models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='user_profile_lista_deseos')
